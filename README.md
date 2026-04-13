@@ -1,4 +1,4 @@
-# 🛰️ Spacecraft Anomaly Detection — Explainable Multi-Modal Digital Twin
+# Spacecraft Anomaly Detection — Explainable Multi-Modal Digital Twin
 
 A full end-to-end research pipeline for detecting anomalies in spacecraft telemetry,
 combining deep learning, graph neural networks, multi-modal fusion, explainability,
