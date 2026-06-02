@@ -1,0 +1,22 @@
+{
+  "run_id": "1d2762cd2faa",
+  "created_at_utc": "2026-06-02T13:19:19.420191+00:00",
+  "status": "running",
+  "command": [
+    "python",
+    "D:\\ProgramXXX\\XAI-SPACECRAFT-ANOMALY-DETECTION-MULTI-MODEL-SYSTEM\\scripts\\run_pipeline.py",
+    "--model",
+    "GNN",
+    "--epochs",
+    "5",
+    "--out",
+    "D:\\ProgramXXX\\XAI-SPACECRAFT-ANOMALY-DETECTION-MULTI-MODEL-SYSTEM\\results\\runs\\1d2762cd2faa"
+  ],
+  "out_dir": "D:\\ProgramXXX\\XAI-SPACECRAFT-ANOMALY-DETECTION-MULTI-MODEL-SYSTEM\\results\\runs\\1d2762cd2faa",
+  "model": "GNN",
+  "epochs": 5,
+  "dataset": "SMAP",
+  "error": null,
+  "return_code": null,
+  "finished_at_utc": null
+}

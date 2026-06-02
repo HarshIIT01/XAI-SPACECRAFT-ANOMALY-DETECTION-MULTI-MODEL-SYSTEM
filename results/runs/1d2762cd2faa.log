@@ -1,0 +1,34 @@
+=================================================================
+  SPACECRAFT ANOMALY DETECTION — FULL PIPELINE DEMO
+=================================================================
+
+[1/6] Loading data (synthetic placeholder if files missing)...
+[SMAP/MSL] channel=P-1  spacecraft=SMAP
+  Train: (2872, 25)  |  Test: (8505, 25)
+  Channels: 25  |  Test anomalies: 751 (8.8%)
+
+[2/6] Building GNN model...
+  Parameters: 53,337
+
+[3/6] Training for 5 epochs...
+  Epoch 1/5  |  loss=0.63906
+  Epoch 2/5  |  loss=0.63635
+  Epoch 3/5  |  loss=0.63696
+Traceback (most recent call last):
+  File "D:\ProgramXXX\XAI-SPACECRAFT-ANOMALY-DETECTION-MULTI-MODEL-SYSTEM\scripts\run_pipeline.py", line 212, in <module>
+    main()
+  File "D:\ProgramXXX\XAI-SPACECRAFT-ANOMALY-DETECTION-MULTI-MODEL-SYSTEM\scripts\run_pipeline.py", line 208, in main
+    run_demo(model_type=args.model, epochs=args.epochs, out_dir=args.out)
+  File "D:\ProgramXXX\XAI-SPACECRAFT-ANOMALY-DETECTION-MULTI-MODEL-SYSTEM\scripts\run_pipeline.py", line 67, in run_demo
+    loss = train_epoch(model, train_dl, optimizer, device, model_type, epoch, epochs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\ProgramXXX\XAI-SPACECRAFT-ANOMALY-DETECTION-MULTI-MODEL-SYSTEM\src\spacecraft_anomaly\training.py", line 107, in train_epoch
+    loss.backward()
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\_tensor.py", line 626, in backward
+    torch.autograd.backward(
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\autograd\__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\autograd\graph.py", line 823, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

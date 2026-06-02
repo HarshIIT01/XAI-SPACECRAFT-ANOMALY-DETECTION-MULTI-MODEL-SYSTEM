@@ -10,7 +10,7 @@ and a generative digital twin visualiser.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         INPUT STREAMS                               |
+│                         INPUT STREAMS                               │
 │  Telemetry (T×C)          Spacecraft Image (3×H×W)                  │
 └────────────┬──────────────────────────┬─────────────────────────────┘
              │                          │
@@ -41,8 +41,8 @@ and a generative digital twin visualiser.
    └─────────────────────────┬────────────────────────┘
                              │
                     ┌────────▼────────┐
-                    │   DASHBOARD     │
-                    │   (Streamlit)   │
+                    │    WEB APP      │
+                    │ (FastAPI UI/API)│
                     └─────────────────┘
 ```
 
@@ -51,33 +51,28 @@ and a generative digital twin visualiser.
 ## Project Structure
 
 ```
-spacecraft_anomaly/
-├── config.py                    # Central configuration dataclasses
-├── requirements.txt             # All Python dependencies
-├── train.py                     # Training CLI
-├── evaluate.py                  # Evaluation + plots CLI
-├── run_pipeline.py              # Full end-to-end demo
-│
-├── data/
-│   ├── preprocessing.py         # Normalisation, windowing, graph builder
-│   ├── smap_msl.py             # NASA SMAP/MSL data loader
-│   └── opssat.py               # ESA OPS-SAT-AD data loader
-│
-├── models/
-│   ├── lstm_ae.py              # LSTM Autoencoder + VAE variant
-│   ├── transformer_ad.py       # TranAD-style Transformer + PatchTransformer
-│   ├── graph_rnn.py            # GraphSAGE + GRU + VAE (STGLR-inspired)
-│   ├── fusion.py               # Multi-modal CNN + telemetry fusion
-│   └── digital_twin.py         # Conditional VAE image generator
-│
-├── explainability/
-│   └── __init__.py             # SHAP, Attention, Causal Graph
-│
-├── detection/
-│   └── detector.py             # Threshold calibration, dual-stage pipeline
-│
-└── dashboard/
-    └── app.py                  # Streamlit real-time monitoring dashboard
+XAI-SPACECRAFT-ANOMALY-DETECTION-MULTI-MODEL-SYSTEM/
+├── src/spacecraft_anomaly/     # Installable Python package
+│   ├── config.py               # Central configuration dataclasses
+│   ├── paths.py                # Project-root path resolution
+│   ├── training.py             # Model factory + train loop
+│   ├── data/                   # Loaders and preprocessing
+│   ├── models/                 # LSTM, Transformer, GNN, Fusion, Digital Twin
+│   ├── detection/              # Threshold calibration and metrics
+│   └── explainability/         # SHAP, attention, causal graph
+├── scripts/                    # CLI entry points
+│   ├── train.py
+│   ├── evaluate.py
+│   ├── run_pipeline.py         # End-to-end demo
+│   └── download_smap_data.ps1  # SMAP/MSL dataset (HF or Kaggle)
+├── data/raw/                   # Datasets only (not importable as a package)
+│   ├── SMAP_MSL/
+│   └── OPSSAT/
+├── checkpoints/                # Saved model weights (*.pt)
+├── results/                    # Evaluation outputs (gitignored artifacts)
+├── webapp/                     # FastAPI + Jinja2 web UI/API (no Streamlit)
+├── requirements.txt
+└── pyproject.toml
 ```
 
 ---
@@ -86,68 +81,135 @@ spacecraft_anomaly/
 
 ### 1. Install dependencies
 
-```bash
+```powershell
+cd D:\ProgramXXX\XAI-SPACECRAFT-ANOMALY-DETECTION-MULTI-MODEL-SYSTEM
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-# For GNN support:
-pip install torch-geometric
+pip install -e .
 ```
+
+Optional GNN support is included via `torch-geometric` in `requirements.txt`.
 
 ### 2. Run the demo (no data download needed)
 
-```bash
-python run_pipeline.py --model GNN --dataset OPSSAT --channel 1 --epochs 5
-# Output in demo_output/
+```powershell
+python scripts\run_pipeline.py --model GNN --epochs 5
 ```
 
-For SMAP/MSL, use:
-
-```bash
-python run_pipeline.py --model GNN --dataset SMAP --channel P-1 --epochs 5
-```
+Outputs are written to `demo_output/` (gitignored).
 
 ### 3. Download real datasets
 
-**NASA SMAP/MSL:**
-```bash
-mkdir -p data/raw/SMAP_MSL
-cd data/raw/SMAP_MSL
-wget https://s3-us-west-2.amazonaws.com/telemanom/data.zip
-unzip data.zip
-wget https://raw.githubusercontent.com/khundman/telemanom/master/labeled_anomalies.csv
+#### NASA SMAP/MSL
+
+The loader expects this layout (paths relative to the repo root):
+
+```
+data/raw/SMAP_MSL/
+├── labeled_anomalies.csv      # chan_id, spacecraft, anomaly_sequences, ...
+├── train/
+│   ├── P-1.npy                # (T_train, C) float32 per channel
+│   └── ...
+└── test/
+    ├── P-1.npy                # (T_test, C)
+    └── ...
 ```
 
-**ESA OPS-SAT-AD:**
-```bash
-# Download from: https://zenodo.org/record/7937210
-mkdir -p data/raw/OPSSAT
-# Extract into data/raw/OPSSAT/
+**Troubleshooting:** The old Telemanom S3 URL (`https://s3-us-west-2.amazonaws.com/telemanom/data.zip`) no longer allows public downloads (403 AccessDenied). Tutorials that still reference it will fail at `Expand-Archive` because `data.zip` was never created. Use the mirrors below instead.
+
+**Quick install (recommended, PowerShell from repo root):**
+
+```powershell
+.\scripts\download_smap_data.ps1
 ```
+
+Downloads all 82 channels from [Hugging Face `appleparan/telemanom`](https://huggingface.co/datasets/appleparan/telemanom) plus `labeled_anomalies.csv` from GitHub. Re-run is safe (existing files are skipped).
+
+**Option A — Hugging Face (no Kaggle account, ~250 MB total)**
+
+Same as the quick install: `.\scripts\download_smap_data.ps1` (default `-Source huggingface`).
+
+Bulk alternative if you have the Hugging Face CLI (`pip install huggingface_hub`):
+
+```powershell
+hf download appleparan/telemanom --repo-type dataset --local-dir data\raw\SMAP_MSL\_hf
+# Then move _hf\data\data\train -> data\raw\SMAP_MSL\train, _hf\data\data\test -> test, and copy labeled_anomalies.csv to data\raw\SMAP_MSL\
+```
+
+**Option B — Kaggle (single zip, official mirror in [khundman/telemanom](https://github.com/khundman/telemanom))**
+
+Requires a free [Kaggle](https://www.kaggle.com/) account and API token in `%USERPROFILE%\.kaggle\kaggle.json` ([setup guide](https://www.kaggle.com/docs/api#authentication)).
+
+```powershell
+pip install kaggle
+.\scripts\download_smap_data.ps1 -Source kaggle
+```
+
+Manual equivalent (bash-style steps adapted for PowerShell):
+
+```powershell
+$dest = "data\raw\SMAP_MSL"
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Set-Location $dest
+kaggle datasets download -d patrickfleith/nasa-anomaly-detection-dataset-smap-msl
+Expand-Archive -Force nasa-anomaly-detection-dataset-smap-msl.zip -DestinationPath .
+Move-Item -Force data\data\train train
+Move-Item -Force data\data\test test
+Remove-Item -Recurse -Force data
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/khundman/telemanom/master/labeled_anomalies.csv" -OutFile labeled_anomalies.csv
+Set-Location ..\..\..
+```
+
+Dataset page: [NASA Anomaly Detection Dataset SMAP & MSL](https://www.kaggle.com/datasets/patrickfleith/nasa-anomaly-detection-dataset-smap-msl)
+
+**Option C — bash (Linux/macOS/WSL)**
+
+```bash
+pip install kaggle
+mkdir -p data/raw/SMAP_MSL && cd data/raw/SMAP_MSL
+kaggle datasets download -d patrickfleith/nasa-anomaly-detection-dataset-smap-msl
+unzip -o nasa-anomaly-detection-dataset-smap-msl.zip
+mv data/data/train train && mv data/data/test test && rm -rf data *.zip
+curl -L -o labeled_anomalies.csv https://raw.githubusercontent.com/khundman/telemanom/master/labeled_anomalies.csv
+cd ../../..
+```
+
+**Verify:**
+
+```powershell
+python -c "from spacecraft_anomaly.data.smap_msl import list_channels; print('channels:', len(list_channels()))"
+python scripts\train.py --model GNN --dataset SMAP --channel P-1 --epochs 1
+```
+
+You should see ~55 SMAP + ~27 MSL channel IDs and no “synthetic placeholder” message from the loader.
+
+#### ESA OPS-SAT-AD
+
+Download from [Zenodo 7937210](https://zenodo.org/record/7937210) and extract into `data\raw\OPSSAT\`.
 
 ### 4. Train a model
 
-```bash
-# GNN model on SMAP, channel P-1
-python train.py --model GNN --dataset SMAP --channel P-1 --epochs 50
-
-# Transformer on OPS-SAT
-python train.py --model TRANSFORMER --dataset OPSSAT --channel 1 --epochs 30
-
-# LSTM Autoencoder on MSL
-python train.py --model LSTM_AE --dataset MSL --channel C-1 --epochs 50
+```powershell
+python scripts\train.py --model GNN --dataset SMAP --channel P-1 --epochs 50
+python scripts\train.py --model TRANSFORMER --dataset OPSSAT --channel 1 --epochs 30
+python scripts\train.py --model LSTM_AE --dataset MSL --channel C-1 --epochs 50
 ```
+
+Checkpoints are saved under `checkpoints\`.
 
 ### 5. Evaluate
 
-```bash
-python evaluate.py \
-  --checkpoint checkpoints/GNN_SMAP_P-1_best.pt \
-  --dataset SMAP --channel P-1
+```powershell
+python scripts\evaluate.py --checkpoint checkpoints\GNN_SMAP_P-1_best.pt --dataset SMAP --channel P-1
 ```
 
-### 6. Launch the dashboard
+Plots and score arrays are saved under `results\`.
 
-```bash
-streamlit run dashboard/app.py
+### 6. Launch the web app
+
+```powershell
+uvicorn webapp.main:app --reload
 ```
 
 ---
@@ -175,36 +237,39 @@ streamlit run dashboard/app.py
 
 ## Digital Twin
 
-The digital twin generates a synthetic spacecraft image conditioned on the telemetry embedding and anomaly severity. The affected subsystem (solar panels, main body, antenna) is highlighted in red:
-
 ```python
-from models.digital_twin import generate_synthetic_spacecraft_image
+from spacecraft_anomaly.models.digital_twin import generate_synthetic_spacecraft_image
+
 img = generate_synthetic_spacecraft_image(anomalous=True, subsystem=0, severity=0.8)
 ```
 
----
+Or run directly from the command line:
 
-## Datasets
-
-| Dataset | Samples | Channels | Anomaly % | Reference |
-|---------|---------|----------|-----------|-----------|
-| NASA SMAP | ~135k | 25 | ~13% | Hundman et al. 2018 |
-| NASA MSL | ~58k | 55 | ~10% | Hundman et al. 2018 |
-| ESA OPS-SAT-AD | ~2.1k frags | 9 | ~20% | ESA 2023 |
+```powershell
+python -c "from spacecraft_anomaly.models.digital_twin import generate_synthetic_spacecraft_image; img = generate_synthetic_spacecraft_image(anomalous=True, subsystem=0, severity=0.8); print('Generated image shape:', img.shape)"
+```
 
 ---
 
 ## Configuration
 
-All hyperparameters are centralised in `config.py`:
+All hyperparameters live in `src/spacecraft_anomaly/config.py`. Enter the Python REPL and run:
 
 ```python
-from config import Config
+from spacecraft_anomaly.config import Config
 cfg = Config()
 cfg.model.model_type = "GNN"
 cfg.train.epochs = 50
 cfg.detection.threshold_percentile = 99.5
 ```
+
+Or from the command line:
+
+```powershell
+python -c "from spacecraft_anomaly.config import Config; cfg = Config(); cfg.model.model_type = 'GNN'; cfg.train.epochs = 50; cfg.detection.threshold_percentile = 99.5; print(cfg)"
+```
+
+Dataset paths are relative to the repository root and resolved automatically.
 
 ---
 

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Run {{ run.run_id }} · Results{% endblock %}
+
+{% block content %}
+  <div class="mb-4">
+    <div class="d-flex align-items-start justify-content-between mb-3">
+      <div>
+        <h1 class="h3 mb-2">
+          <i class="bi bi-file-earmark-text text-primary me-2"></i>Run {{ run.run_id }}
+        </h1>
+        <div class="text-muted">
+          <i class="bi bi-diagram-3 me-1"></i>{{ run.model }} ·
+          <i class="bi bi-skip-forward me-1"></i>epochs={{ run.epochs }} ·
+          <i class="bi bi-calendar me-1"></i>{{ run.created_at_utc[:10] }}
+        </div>
+      </div>
+      <div class="text-end">
+        <span class="run-status-badge {{ run.status }}">
+          {{ run.status }}
+        </span>
+        <div class="text-muted small mt-2">Return code: <code>{{ run.return_code if run.return_code is not none else "—" }}</code></div>
+      </div>
+    </div>
+
+    {% if run.error %}
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-circle me-2"></i>
+        <strong>Error:</strong> {{ run.error }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header bg-light py-3">
+      <div class="fw-semibold"><i class="bi bi-terminal me-2"></i>Command</div>
+    </div>
+    <div class="card-body font-monospace text-break small">
+      {{ " ".join(run.command) }}
+      <div class="text-muted small mt-3"><i class="bi bi-folder me-1"></i>Output: <code>{{ run.out_dir }}</code></div>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <h2 class="h5 mb-3"><i class="bi bi-box text-primary me-2"></i>Artifacts</h2>
+    {% if artifacts %}
+      <div class="row g-3">
+        {% for a in artifacts %}
+          <div class="col-md-6 col-lg-4">
+            <div class="card artifact-card h-100">
+              {% if a.is_image %}
+                <img class="artifact-image" src="/results/{{ run.run_id }}/download/{{ a.name }}" alt="{{ a.name }}" />
+              {% endif %}
+              <div class="card-body">
+                <div class="fw-semibold text-truncate mb-1" title="{{ a.name }}">
+                  <i class="bi bi-file-earmark me-1"></i>{{ a.name }}
+                </div>
+                <div class="text-muted small mb-3" data-bytes="{{ a.size }}">0 B</div>
+                <a class="btn btn-sm btn-primary w-100" href="/results/{{ run.run_id }}/download/{{ a.name }}">
+                  <i class="bi bi-download me-1"></i>Download
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="bi bi-info-circle me-2"></i>
+        No artifacts found yet. If the run is still running, refresh this page.
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="text-center text-muted small">
+    <a href="/results" class="link-secondary"><i class="bi bi-arrow-left me-1"></i>Back to results</a>
+  </div>
+
+  <script>
+    // Auto-refresh while running
+    const runStatus = '{{ run.status }}';
+    if (runStatus === 'running' || runStatus === 'queued') {
+      setupAutoRefresh('{{ run.run_id }}', 2000);
+    }
+  </script>
+{% endblock %}
+

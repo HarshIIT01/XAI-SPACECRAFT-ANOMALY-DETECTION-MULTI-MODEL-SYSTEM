@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Results · Spacecraft Anomaly Detection{% endblock %}
+
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0"><i class="bi bi-list-ul text-primary me-2"></i>All Results</h1>
+    <a class="btn btn-primary" href="/run"><i class="bi bi-plus-circle me-1"></i>New run</a>
+  </div>
+
+  {% if runs %}
+    <div class="list-group">
+      {% for r in runs %}
+        <a class="list-group-item list-group-item-action py-3" href="/results/{{ r.run_id }}">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <div class="fw-bold">Run {{ r.run_id }}</div>
+                <span class="run-status-badge {{ r.status }} small">
+                  {{ r.status }}
+                </span>
+              </div>
+              <div class="text-muted small">
+                <i class="bi bi-diagram-3 me-1"></i>{{ r.model }} ·
+                <i class="bi bi-skip-forward me-1"></i>epochs={{ r.epochs }} ·
+                <i class="bi bi-calendar me-1"></i>{{ r.created_at_utc[:10] }} {{ r.created_at_utc[11:16] }}
+              </div>
+            </div>
+            <div class="text-end text-muted small">
+              <div class="fw-semibold">
+                {% if r.finished_at_utc %}
+                  <i class="bi bi-check-circle"></i> Complete
+                {% elif r.status == 'running' %}
+                  <i class="bi bi-hourglass-split"></i> Running
+                {% elif r.status == 'queued' %}
+                  <i class="bi bi-clock"></i> Queued
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-center py-5">
+      <div class="mb-3">
+        <i class="bi bi-inbox text-muted display-4"></i>
+      </div>
+      <div class="text-muted">
+        <p class="mb-3">No runs found yet.</p>
+        <a href="/run" class="btn btn-primary"><i class="bi bi-play-circle me-2"></i>Start your first run</a>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+

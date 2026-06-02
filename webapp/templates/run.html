@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Run Pipeline · Spacecraft Anomaly Detection{% endblock %}
+
+{% block content %}
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="mb-4">
+        <h1 class="h3 mb-2"><i class="bi bi-play-circle text-primary me-2"></i>Run pipeline</h1>
+        <p class="text-muted">
+          This triggers <code>python scripts/run_pipeline.py</code> in the background and stores artifacts under <code>results/runs/&lt;run_id&gt;/</code>.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <form method="post" action="/run" class="row g-4">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Dataset</label>
+              <select name="dataset" class="form-select form-select-lg">
+                <option value="SMAP" selected>SMAP / MSL (demo loader)</option>
+                <option value="OPSSAT">OPS-SAT</option>
+              </select>
+              <div class="form-text">Current demo script uses the SMAP/MSL loader.</div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-semibold">Model</label>
+              <select name="model" class="form-select form-select-lg">
+                <option value="GNN" selected>Graph Neural Network (GNN)</option>
+                <option value="TRANSFORMER">Transformer</option>
+                <option value="LSTM_AE">LSTM Autoencoder</option>
+                <option value="LSTM_VAE">LSTM VAE</option>
+                <option value="FUSION">Fusion</option>
+              </select>
+              <div class="form-text">Select the model architecture for anomaly detection.</div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-semibold">Epochs</label>
+              <input type="number" name="epochs" class="form-control form-control-lg" min="1" max="500" value="{{ defaults.epochs }}" required />
+              <div class="form-text">Use 1–5 for quick smoke tests, higher for better accuracy.</div>
+            </div>
+
+            <div class="col-12 d-flex gap-2 pt-2">
+              <button class="btn btn-primary btn-lg" type="submit" data-loading-text="Running...">
+                <i class="bi bi-play-fill me-2"></i>Start run
+              </button>
+              <a class="btn btn-outline-secondary btn-lg" href="/results">
+                <i class="bi bi-file-earmark me-2"></i>View results
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="p-2 bg-success bg-opacity-10 rounded">
+              <i class="bi bi-box text-success fs-5"></i>
+            </div>
+            <div class="fw-semibold ms-2">What you’ll get</div>
+          </div>
+          <ul class="mb-0 text-muted small">
+            <li class="mb-2"><i class="bi bi-graph-up text-primary me-2"></i>Anomaly score timeline plot</li>
+            <li class="mb-2"><i class="bi bi-lightbulb text-warning me-2"></i>SHAP attribution plot + anomaly report</li>
+            <li class="mb-2"><i class="bi bi-diagram-3 text-info me-2"></i>Digital twin visualisation</li>
+            <li><i class="bi bi-file-earmark-json text-secondary me-2"></i>Run metadata JSON + captured log</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="p-2 bg-primary bg-opacity-10 rounded">
+              <i class="bi bi-lightning text-primary fs-5"></i>
+            </div>
+            <div class="fw-semibold ms-2">Automation</div>
+          </div>
+          <div class="text-muted small mb-3">
+            Use <code class="bg-light p-1 rounded">POST /api/runs</code> to start runs and <code class="bg-light p-1 rounded">GET /api/runs/&lt;id&gt;</code> to poll status.
+          </div>
+          <a href="/docs" class="btn btn-sm btn-outline-primary" target="_blank" rel="noreferrer">
+            <i class="bi bi-code-square me-1"></i>View API docs
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
